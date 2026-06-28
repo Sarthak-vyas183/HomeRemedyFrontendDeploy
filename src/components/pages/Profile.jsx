@@ -38,6 +38,10 @@ function Profile() {
   const [RMP_img, setRMP_img] = useState(null);
   const [deletePassword, setDeletePassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [resetPassword, setResetPassword] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
   const [isDeleteSubmitting, setIsDeleteSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -231,6 +235,48 @@ function Profile() {
     }
   };
 
+  const handlePasswordReset = async () => {
+    if (!oldPassword || !newPassword) {
+      toast.error("Please enter both current and new password.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters.");
+      return;
+    }
+    if (isPasswordSubmitting) return;
+    setIsPasswordSubmitting(true);
+
+    try {
+      const response = await fetch(`${baseUrl}user/changepassword`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ oldpassword: oldPassword, newpassword: newPassword }),
+      });
+
+      if (!response.ok) {
+        let message = "Unable to change password. Please try again.";
+        try {
+          const data = await response.json();
+          message = data?.message || message;
+        } catch {
+          // response wasn't JSON; keep generic message
+        }
+        toast.error(message);
+        return;
+      }
+
+      toast.success("Password updated successfully.");
+      setResetPassword(false);
+      setOldPassword("");
+      setNewPassword("");
+    } catch (error) {
+      toast.error("Network error — please check your connection and try again.");
+    } finally {
+      setIsPasswordSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-full bg-gray-50 p-4 lg:p-8 pb-20 lg:pb-8">
       {/* Profile Hero */}
@@ -332,7 +378,7 @@ function Profile() {
             <div className="space-y-2">
               {[
                 { label: "Get Certificate", action: () => toast.info("Coming soon!"), color: "blue", badge: "Soon" },
-                { label: "Reset Password", action: () => toast.info("Coming soon!"), color: "amber", badge: "Soon" },
+                { label: "Reset Password", action: () => setResetPassword(true), color: "blue", badge: "Reset" },
                 { label: "Edit Profile", action: () => setIsEditing(true), color: "forest", badge: "Edit" },
               ].map(({ label, action, color, badge }) => (
                 <button
@@ -436,6 +482,50 @@ function Profile() {
         </Modal>
       )}
 
+      {resetPassword && (
+        <Modal title="Reset Password" onClose={() => { setResetPassword(false); setOldPassword(""); setNewPassword(""); }} accentColor="amber">
+          <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+            <div className="form-group">
+              <label className="label">Current Password</label>
+              <input
+                type="password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                className="input-field"
+                placeholder="Enter current password"
+              />
+            </div>
+            <div className="form-group">
+              <label className="label">New Password</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="input-field"
+                placeholder="Enter new password"
+              />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handlePasswordReset}
+              disabled={isPasswordSubmitting}
+              className="btn-primary flex-1 disabled:opacity-60"
+            >
+              {isPasswordSubmitting ? "Updating..." : "Change Password"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setResetPassword(false); setOldPassword(""); setNewPassword(""); }}
+              className="btn-secondary flex-1"
+            >
+              Cancel
+            </button>
+          </div>
+        </Modal>
+      )}
+
       {/* Doctor Form Modal */}
       {DoctorForm && (
         <Modal title="Apply for Professional Status" onClose={() => { setDoctorForm(false); setRMP_NO(""); setRMP_img(null); setDoctorMessage(""); }}>
@@ -496,6 +586,8 @@ function Profile() {
           </div>
         </Modal>
       )}
+
+
     </div>
   );
 }
