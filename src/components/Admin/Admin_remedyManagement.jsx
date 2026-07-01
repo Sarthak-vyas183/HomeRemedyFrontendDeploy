@@ -34,7 +34,7 @@ function Admin_remedyManagement() {
 
   const filteredRemedies = remedies.filter(r => {
     if (filter === 'verified') return r.isVerified;
-    if (filter === 'pending') return !r.isVerified;
+    if (filter === 'unverified') return !r.isVerified;
     return true;
   });
 
@@ -56,19 +56,19 @@ function Admin_remedyManagement() {
             <h1 className="text-2xl font-bold text-gray-900">Remedy Management</h1>
             <p className="text-gray-500 text-sm mt-1">{remedies.length} total remedies in system</p>
           </div>
-          {/* Filter tabs */}
-          <div className="flex bg-white border border-gray-200 rounded-xl p-1 gap-1">
+          {/* Filter buttons */}
+          <div className="flex flex-wrap bg-white border border-gray-200 rounded-xl p-1 gap-1">
             {[
               { key: 'all', label: 'All', count: remedies.length },
               { key: 'verified', label: 'Verified', count: remedies.filter(r => r.isVerified).length },
-              { key: 'pending', label: 'Pending', count: remedies.filter(r => !r.isVerified).length },
+              { key: 'unverified', label: 'Unverified', count: remedies.filter(r => !r.isVerified).length },
             ].map(({ key, label, count }) => (
               <button
                 key={key}
                 onClick={() => setFilter(key)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                  filter === key ? "bg-indigo-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-800"
-                }`}
+                aria-pressed={filter === key}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${filter === key ? "bg-indigo-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-800"
+                  }`}
               >
                 {label}
                 <span className={`ml-1.5 text-xs font-bold px-1.5 py-0.5 rounded-full ${filter === key ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"}`}>
