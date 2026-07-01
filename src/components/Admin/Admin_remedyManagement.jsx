@@ -6,6 +6,7 @@ function Admin_remedyManagement() {
   const [remedies, setRemedies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [deletingId, setDeletingId] = useState(null);
   const { token } = useAuth();
 
   const fetchAllRemedies = async () => {
@@ -31,6 +32,40 @@ function Admin_remedyManagement() {
     fetchAllRemedies();
     // eslint-disable-next-line
   }, []);
+
+  const handleDeleteRemedy = async (remedyId) => {
+    if (!remedyId || !token) return;
+
+    const confirmed = window.confirm('Are you sure you want to delete this remedy?');
+    if (!confirmed) return;
+
+    setDeletingId(remedyId);
+    try {
+      const response = await fetch(`${baseUrl}admin/delete_remedy_by_admin`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ remedyId }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        alert(data.msg || 'Failed to delete remedy');
+        return;
+      }
+
+      setRemedies((prev) => prev.filter((remedy) => remedy._id !== remedyId));
+      alert(data.msg || 'Remedy deleted successfully');
+    } catch (error) {
+      console.error('Delete remedy error:', error);
+      alert('Something went wrong while deleting the remedy');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filteredRemedies = remedies.filter(r => {
     if (filter === 'verified') return r.isVerified;
@@ -139,16 +174,27 @@ function Admin_remedyManagement() {
                     </div>
                   </div>
 
-                  {remedy.EcommerceUrl && (
-                    <a
-                      href={remedy.EcommerceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-xs font-semibold"
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {remedy.EcommerceUrl && (
+                      <a
+                        href={remedy.EcommerceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-xs font-semibold"
+                      >
+                        🛒 Buy Related Product
+                      </a>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteRemedy(remedy._id)}
+                      disabled={deletingId === remedy._id}
+                      className="ml-auto rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      🛒 Buy Related Product
-                    </a>
-                  )}
+                      {deletingId === remedy._id ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
